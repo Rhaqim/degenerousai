@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 
 from api.model.chat_completions import ChatCompletionRequest, ChatCompletionResponse
 from api.model.image import ImageRequest, ImageResponse
@@ -10,6 +10,31 @@ from api.services.tts import process_request as tts_process_request
 
 
 router = APIRouter()
+
+
+@router.post("/audio/speech")
+async def speech_to_text(request: CreateSpeechRequest):
+    """
+    Endpoint to handle speech-to-text generation.
+    """
+    try:
+        audio = tts_process_request(request)
+        if not audio:
+            raise HTTPException(
+                status_code=500, detail="Error processing audio request"
+            )
+
+        format = request.download_format or request.response_format or "wav"
+        headers = {
+            "Content-Disposition": f'attachment; filename="output.{format}"',
+            "Content-Type": f"audio/{format}",
+        }
+
+        return StreamingResponse(audio, media_type=f"audio/{format}", headers=headers)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/chat/completions", response_model=ChatCompletionResponse)
@@ -40,21 +65,10 @@ async def chat_completions(request: ChatCompletionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/audio/speech")
-async def speech_completions(request: CreateSpeechRequest):
-    """
-    Endpoint to handle speech completions.
-    """
-    try:
-        return tts_process_request(request)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.post("/images/generations", response_model=ImageResponse)
-async def image_completions(request: ImageRequest):
+async def image_generations(request: ImageRequest):
     """
-    Endpoint to handle image completions.
+    Endpoint to handle image generations.
     """
     try:
         response = {
@@ -82,10 +96,10 @@ async def image_completions(request: ImageRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/video/completions", response_model=VideoResponse)
-async def video_completions(request: VideoRequest):
+@router.post("/video/generations", response_model=VideoResponse)
+async def video_generations(request: VideoRequest):
     """
-    Endpoint to handle video completions.
+    Endpoint to handle video generations.
     """
     try:
         response = {

@@ -18,25 +18,26 @@ class KokotoTTS(TextToSpeechServiceBase):
 
         self.repo_id = "hexgrad/Kokoro-82M"
 
-        # Initialize the TTS pipeline with the specified language code and repository ID
-        self.english_pipeline = KPipeline(lang_code="a", repo_id=self.repo_id)
+    def process_request(
+        self, text: str, lang_code: str | None, voice: str, speed: float = 1.0
+    ):
+        lang_code = lang_code if lang_code else "a"
+        return self.generate_audio(text, lang_code, voice, speed)
 
-    def process_request(self, text: str, **kwargs):
-        return self.generate_audio(text, **kwargs)
-
-    def generate_audio(self, text: str, lang: str, voice: str) -> Optional[io.BytesIO]:
+    def generate_audio(
+        self, text: str, lang_code: str, voice: str, speed: float = 1.0
+    ) -> Optional[io.BytesIO]:
         """
         Generate audio from text using the specified language and voice.
         """
         if not text:
             raise ValueError("Text cannot be empty")
 
-        lang_ = lang if lang in self.get_supported_languages() else "a"
         voice_ = voice if voice in self.get_supported_voices() else "af_heart"
 
-        pipeline = self.get_pipeline(lang_)
+        pipeline = self.get_pipeline(lang_code)
 
-        generator = pipeline(text, voice=voice_)
+        generator = pipeline(text, voice=voice_, speed=speed)
 
         for i, (ge, ps, audio) in enumerate(generator):
             if audio is not None:  # Check if audio is generated
@@ -50,7 +51,7 @@ class KokotoTTS(TextToSpeechServiceBase):
         """
         Get the supported languages for the TTS service.
         """
-        return ["en", "ja", "ko", "zh"]
+        return ["a", "j", "z"]
 
     def get_supported_voices(self):
         """
@@ -62,8 +63,8 @@ class KokotoTTS(TextToSpeechServiceBase):
         """
         Get the TTS pipeline for the specified language code.
         """
-        if lang_code == "a":
-            return self.english_pipeline
 
-        else:
-            raise ValueError(f"Unsupported language code: {lang_code}")
+        lang = lang_code if lang_code in self.get_supported_languages() else "a"
+
+        # Initialize the TTS pipeline with the specified language code and repository ID
+        return KPipeline(lang_code=lang, repo_id=self.repo_id)
