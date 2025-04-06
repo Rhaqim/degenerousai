@@ -1,0 +1,25 @@
+[project]
+name = "degenerousai"
+version = "0.1.0"
+description = "Central service for Degenerous AI"
+authors = [
+    {name = "Rhaqim",email = "anusiemj@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "fastapi==0.115.6",
+    "pydantic==2.10.4",
+    "numpy>=2.2.4",
+    "soundfile==0.13.0",
+    "kokoro (>=0.9.4,<0.10.0)",
+    "uvicorn (>=0.34.0,<0.35.0)"
+]
+
+[tool.poetry]
+packages = [{include = "degenerousai", from = "src"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
