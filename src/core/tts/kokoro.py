@@ -1,7 +1,6 @@
 from kokoro import KPipeline
 import io
 from typing import Optional
-import soundfile as sf
 
 from core.interface.texttospeech import TextToSpeechServiceBase
 
@@ -25,27 +24,34 @@ class KokotoTTS(TextToSpeechServiceBase):
         return self.generate_audio(text, lang_code, voice, speed)
 
     def generate_audio(
-        self, text: str, lang_code: str, voice: str, speed: float = 1.0
+        self,
+        text: str,
+        lang_code: str,
+        voice: str,
+        speed: float = 1.0,
+        output_format: str = "wav",
     ) -> Optional[io.BytesIO]:
         """
         Generate audio from text using the specified language and voice.
         """
-        if not text:
+        if not text or not text.strip():
             raise ValueError("Text cannot be empty")
 
         voice_ = voice if voice in self.get_supported_voices() else "af_heart"
 
-        pipeline = self.get_pipeline(lang_code)
+        try:
 
-        generator = pipeline(text, voice=voice_, speed=speed)
+            pipeline = self.get_pipeline(lang_code)
 
-        for i, (ge, ps, audio) in enumerate(generator):
-            if audio is not None:  # Check if audio is generated
-                audio_buffer = io.BytesIO()
-                sf.write(audio_buffer, audio, 24000, format="WAV")
-                audio_buffer.seek(0)
-                return audio_buffer
-        return None
+            generator = pipeline(text, voice=voice_, speed=speed)
+
+            for i, (ge, ps, audio) in enumerate(generator):
+                if audio is not None:  # Check if audio is generated
+                    return self.convcert_audio(audio, output_format)
+            return None
+        except Exception as e:
+            print(f"Error generating audio: {e}")
+            return None
 
     def get_supported_languages(self):
         """
