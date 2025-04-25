@@ -153,7 +153,27 @@ class KokotoTTS(TextToSpeechServiceBase):
         """
         Get the supported voices for the TTS service.
         """
-        return ["af_heart", "af_joy", "af_sad", "af_angry", "af_fear", "af_disgust"]
+        names = [
+                "af_alloy",
+                "af_bella",
+                "af_heart",
+                "af_jessica",
+                "af_kore",
+                "af_nicole",
+                "af_nova",
+                "af_river",
+                "af_sarah",
+                "af_sky",
+                "am_echo",
+                "am_eric",
+                "am_fenrir",
+                "am_liam",
+                "am_michael",
+                "am_onyx",
+                "am_puck",
+                "am_santa"
+            ]
+        return names
 
     def get_pipeline(self, lang_code) -> KPipeline:
         """
