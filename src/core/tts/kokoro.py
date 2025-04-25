@@ -20,6 +20,7 @@ class KokotoTTS(TextToSpeechServiceBase):
         """
 
         self.repo_id = "hexgrad/Kokoro-82M"
+        self._model = None
         self._device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model_name = "kokoro-v1_0.pth"
 
