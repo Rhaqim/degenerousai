@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 
 from api.model.chat_completions import ChatCompletionRequest, ChatCompletionResponse
 from api.model.image import ImageRequest, ImageResponse
 from api.model.speech import CreateSpeechRequest
+from api.model.topic import TopicDraft
 from api.model.video import VideoRequest, VideoResponse
 
 from api.services.tts import process_request as tts_process_request
-
+from api.services.ocr import parse_ocr
 
 router = APIRouter()
 
@@ -31,6 +32,48 @@ async def speech_to_text(request: CreateSpeechRequest):
         }
 
         return StreamingResponse(audio, media_type=f"audio/{format}", headers=headers)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+ACCEPTED_TYPES = {
+    "application/pdf": "pdf",
+    "text/plain": "txt",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+    "application/msword": "doc",
+}
+
+
+@router.post("/ocr/topic", response_model=TopicDraft)
+async def ocr_topic(request: UploadFile):
+    """
+    Endpoint to handle OCR processing for topic drafts.
+    Accepts PDF, TXT, DOC, DOCX files.
+    """
+    try:
+        if not request.content_type:
+            raise HTTPException(
+                status_code=400,
+                detail="Content-Type header is missing. Please upload a valid file.",
+            )
+
+        file_type = ACCEPTED_TYPES.get(request.content_type)
+        if not file_type:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid file type. Please upload a PDF, text, or Word document.",
+            )
+
+        file_bytes = await request.read()
+        topic_draft = await parse_ocr(file_bytes, file_type)
+
+        if not topic_draft:
+            raise HTTPException(status_code=500, detail="Error processing OCR request")
+
+        return topic_draft
+
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="File not found")
     except Exception as e:
