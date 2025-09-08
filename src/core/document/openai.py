@@ -5,6 +5,7 @@ from typing import Optional
 from openai import OpenAI
 
 from database.vector_store import VectorStore
+from database.topic_draft import TopicDraftDB
 from model.topic import TopicDraft
 
 
@@ -14,12 +15,26 @@ class DocumentProcessor:
     Supports processing from file paths, URLs, or raw byte data.
     """
 
-    def __init__(self, client: Optional[OpenAI] = None, api_key: Optional[str] = None):
+    def __init__(
+        self,
+        client: Optional[OpenAI] = None,
+        api_key: Optional[str] = None,
+        vector_db: Optional[VectorStore] = None,
+        topic_db: Optional[TopicDraftDB] = None,
+    ):
         """
         Initialize the DocumentProcessor with OpenAI API key and vector store database.
         """
         self.client = client or OpenAI(api_key=api_key)
-        self.db = VectorStore()
+        self.db = vector_db or VectorStore()
+        self.topic_db = topic_db or TopicDraftDB()
+
+    def _migrate(self):
+        """
+        Ensures the necessary database tables are created.
+        """
+        self.db._migrate()
+        self.topic_db._migrate()
 
     def get_or_create_vector_store_id(self, name: str) -> str:
         """
@@ -66,20 +81,24 @@ class DocumentProcessor:
         file_like = BytesIO(byte_data)
         self._upload_and_process(file_like, vector_store_name)
 
-    def check_file_status(self, vector_store_id: str) -> bool:
+    def check_file_status(self, vector_store_name: str) -> bool:
         """
         Check the status of an uploaded file by its ID.
         """
+        vector_store_id = self.get_or_create_vector_store_id(vector_store_name)
+
         result = self.client.vector_stores.files.list(vector_store_id=vector_store_id)
         for file in result.data:
             if file.status == "completed":
                 return True
         return False
 
-    def generate_topic_draft(self, name: str) -> Optional["TopicDraft"]:
+    def generate_topic_draft(self, vector_store_name: str) -> Optional["TopicDraft"]:
         """
         Generate a draft for a given topic using the associated vector store.
         """
+
+        vector_store_id = self.get_or_create_vector_store_id(vector_store_name)
 
         response = self.client.responses.parse(
             model="gpt-4o",
@@ -87,11 +106,17 @@ class DocumentProcessor:
             tools=[
                 {
                     "type": "file_search",
-                    "vector_store_ids": [self.get_or_create_vector_store_id(name)],
+                    "vector_store_ids": [vector_store_id],
                 }
             ],
             text_format=TopicDraft,
         )
+
+        # store the generated topic draft in the database
+        if response.output_parsed:
+            self.topic_db.create_topic_draft(
+                response.output_parsed, vector_store_id=vector_store_id
+            )
 
         return response.output_parsed
 
