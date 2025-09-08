@@ -28,6 +28,7 @@ class DocumentProcessor:
         self.client = client or OpenAI(api_key=api_key)
         self.db = vector_db or VectorStore()
         self.topic_db = topic_db or TopicDraftDB()
+        # Optionally call self._migrate() here if needed
 
     def _migrate(self):
         """
@@ -52,6 +53,9 @@ class DocumentProcessor:
         """
         Upload a file-like object to OpenAI and associate it with the specified vector store.
         """
+        # Ensure file_like has a name attribute
+        if not hasattr(file_like, "name"):
+            file_like.name = "uploaded_file"
         upload_response = self.client.files.create(file=file_like, purpose="assistants")
         vector_store_id = self.get_or_create_vector_store_id(vector_store_name)
         self.client.vector_stores.files.create(
@@ -63,7 +67,9 @@ class DocumentProcessor:
         Process a local file and associate it with a vector store.
         """
         with open(file_path, "rb") as f:
-            self._upload_and_process(f, vector_store_name)
+            file_like = BytesIO(f.read())
+            file_like.name = file_path  # Ensure file has a name
+            self._upload_and_process(file_like, vector_store_name)
 
     def process_url(self, url: str, vector_store_name: str) -> None:
         """
@@ -72,6 +78,7 @@ class DocumentProcessor:
         response = requests.get(url)
         response.raise_for_status()
         file_like = BytesIO(response.content)
+        file_like.name = url.split("/")[-1] or "downloaded_file"
         self._upload_and_process(file_like, vector_store_name)
 
     def process_byte_data(self, byte_data: bytes, vector_store_name: str) -> None:
@@ -79,6 +86,7 @@ class DocumentProcessor:
         Process raw byte data and associate it with a vector store.
         """
         file_like = BytesIO(byte_data)
+        file_like.name = "uploaded_file"
         self._upload_and_process(file_like, vector_store_name)
 
     def check_file_status(self, vector_store_name: str) -> bool:
@@ -93,7 +101,7 @@ class DocumentProcessor:
                 return True
         return False
 
-    def generate_topic_draft(self, vector_store_name: str) -> Optional["TopicDraft"]:
+    def generate_topic_draft(self, vector_store_name: str) -> Optional[TopicDraft]:
         """
         Generate a draft for a given topic using the associated vector store.
         """
@@ -123,5 +131,8 @@ class DocumentProcessor:
 
 # Example usage:
 # api_key = "your_openai_api_key"
-# processor = DocumentProcessor(api_key)
-# processor.process_url("https://example.com/document.pdf", "my_vector_store")F
+# processor = DocumentProcessor(api_key=api_key)
+# processor.process_url("https://example.com/document.pdf", "my_vector_store")
+# if processor.check_file_status("my_vector_store"):
+#     draft = processor.generate_topic_draft("my_vector_store")
+#     print(draft)
