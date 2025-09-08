@@ -6,11 +6,11 @@ authors = [
     {name = "Rhaqim",email = "anusiemj@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.11,<3.13"
 dependencies = [
-    "fastapi==0.115.6",
-    "pydantic==2.10.4",
-    "numpy>=2.2.4",
+    "fastapi==0.116.1",
+    "pydantic==2.11.7",
+    "numpy>=2.3.2",
     "soundfile==0.13.0",
     "kokoro (>=0.9.4,<0.10.0)",
     "uvicorn (>=0.34.0,<0.35.0)",
@@ -18,6 +18,7 @@ dependencies = [
     "docx2txt (>=0.9,<0.10)",
     "pymupdf (>=1.26.4,<2.0.0)",
     "python-multipart (>=0.0.20,<0.0.21)",
+    "openai (>=1.106.1,<2.0.0)",
 ]
 
 [tool.poetry]
