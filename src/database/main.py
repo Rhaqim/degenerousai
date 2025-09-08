@@ -1,6 +1,7 @@
-import sqlite3
 import os
 from typing import Optional
+
+import sqlite3
 
 
 class Database:
@@ -107,5 +108,3 @@ class Database:
         if self.connection:
             self.connection.close()
             print(f"Connection to database {self.db_name} closed.")
-
-    

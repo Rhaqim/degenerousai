@@ -1,10 +1,11 @@
 import io
-from typing import Dict
 import re
+from typing import Dict
+
 import pymupdf
 import docx2txt
 
-from api.model.topic import TopicDraft
+from model.topic import TopicDraft
 
 
 async def parse_ocr(file_bytes: bytes, file_type: str) -> TopicDraft:

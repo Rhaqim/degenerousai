@@ -1,5 +1,5 @@
 from core.tts.kokoro import KokotoTTS
-from api.model.speech import CreateSpeechRequest
+from model.speech import CreateSpeechRequest
 
 kokoro_tts = KokotoTTS()
 

@@ -1,6 +1,7 @@
+from typing import Optional
+
 from .main import Database
 
-from typing import Optional
 
 class VectorStore:
     def __init__(self):
@@ -32,7 +33,7 @@ class VectorStore:
         query = "SELECT vector_Store_id FROM vector_store_ids WHERE name = ?"
         result = self.db.fetch_one(query, (name,))
         return result["vector_Store_id"] if result else None
-    
+
     def update_vector_store_id(self, name: str, new_vector_store_id: str):
         query = "UPDATE vector_store_ids SET vector_Store_id = ? WHERE name = ?"
         self.db.execute(query, (new_vector_store_id, name))

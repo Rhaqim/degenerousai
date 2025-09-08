@@ -1,8 +1,9 @@
 import pytest
 from unittest.mock import MagicMock, patch
+
 from api.services.ocr import extract_text_from_pdf
 from api.services.ocr import extract_sections, build_topic_draft_from_text
-from api.model.topic import TopicDraft
+from model.topic import TopicDraft
 
 
 def make_fake_pdf_page(text):

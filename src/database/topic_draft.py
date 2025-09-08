@@ -1,9 +1,10 @@
 import json
 from typing import Optional
 
-from api.model.topic import TopicDraft
+from model.topic import TopicDraft
 
 from .main import Database
+
 
 class TopicDraftDB:
     def __init__(self):
@@ -31,32 +32,69 @@ class TopicDraftDB:
         self.db.commit()
         print("TopicDraft database migration completed.")
 
-    def create_topic_draft(self, topic_draft: TopicDraft, vector_store_id: Optional[str] = None):
+    def create_topic_draft(
+        self, topic_draft: TopicDraft, vector_store_id: Optional[str] = None
+    ):
         query = "INSERT INTO topic_drafts (title, story_data, open_prompt, table_prompt, vector_store_id) VALUES (?, ?, ?, ?, ?)"
-        story_data_json = topic_draft.story_data.model_dump_json() if topic_draft.story_data else None
-        table_prompt_json = topic_draft.table_prompt.model_dump_json() if topic_draft.table_prompt else None
-        self.db.execute(query, (topic_draft.title, story_data_json, topic_draft.open_prompt, table_prompt_json, vector_store_id))
+        story_data_json = (
+            topic_draft.story_data.model_dump_json() if topic_draft.story_data else None
+        )
+        table_prompt_json = (
+            topic_draft.table_prompt.model_dump_json()
+            if topic_draft.table_prompt
+            else None
+        )
+        self.db.execute(
+            query,
+            (
+                topic_draft.title,
+                story_data_json,
+                topic_draft.open_prompt,
+                table_prompt_json,
+                vector_store_id,
+            ),
+        )
         self.db.commit()
 
     def read_topic_draft(self, vector_store_id: str) -> Optional[TopicDraft]:
         query = "SELECT * FROM topic_drafts WHERE vector_store_id = ?"
         result = self.db.fetch_one(query, (vector_store_id,))
         if result:
-            story_data = json.loads(result["story_data"]) if result["story_data"] else None
-            table_prompt = json.loads(result["table_prompt"]) if result["table_prompt"] else None
+            story_data = (
+                json.loads(result["story_data"]) if result["story_data"] else None
+            )
+            table_prompt = (
+                json.loads(result["table_prompt"]) if result["table_prompt"] else None
+            )
             return TopicDraft(
                 title=result["title"],
                 story_data=story_data,
                 open_prompt=result["open_prompt"],
-                table_prompt=table_prompt
+                table_prompt=table_prompt,
             )
         return None
-    
+
     def update_topic_draft(self, title: str, updated_topic_draft: TopicDraft):
         query = "UPDATE topic_drafts SET story_data = ?, open_prompt = ?, table_prompt = ? WHERE title = ?"
-        story_data_json = json.dumps(updated_topic_draft.story_data.dict()) if updated_topic_draft.story_data else None
-        table_prompt_json = json.dumps(updated_topic_draft.table_prompt.dict()) if updated_topic_draft.table_prompt else None
-        self.db.execute(query, (story_data_json, updated_topic_draft.open_prompt, table_prompt_json, title))
+        story_data_json = (
+            json.dumps(updated_topic_draft.story_data.dict())
+            if updated_topic_draft.story_data
+            else None
+        )
+        table_prompt_json = (
+            json.dumps(updated_topic_draft.table_prompt.dict())
+            if updated_topic_draft.table_prompt
+            else None
+        )
+        self.db.execute(
+            query,
+            (
+                story_data_json,
+                updated_topic_draft.open_prompt,
+                table_prompt_json,
+                title,
+            ),
+        )
         self.db.commit()
 
     def delete_topic_draft(self, title: str):

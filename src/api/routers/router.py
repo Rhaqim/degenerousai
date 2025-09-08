@@ -1,11 +1,11 @@
 from fastapi import APIRouter, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 
-from api.model.chat_completions import ChatCompletionRequest, ChatCompletionResponse
-from api.model.image import ImageRequest, ImageResponse
-from api.model.speech import CreateSpeechRequest
-from api.model.topic import TopicDraft
-from api.model.video import VideoRequest, VideoResponse
+from model.chat_completions import ChatCompletionRequest, ChatCompletionResponse
+from model.image import ImageRequest, ImageResponse
+from model.speech import CreateSpeechRequest
+from model.topic import TopicDraft
+from model.video import VideoRequest, VideoResponse
 
 from api.services.tts import process_request as tts_process_request
 from api.services.ocr import parse_ocr

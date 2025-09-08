@@ -24,7 +24,9 @@ class TextToSpeechServiceBase(AIServiceBase):
         """
         pass
 
-    def convert_audio(self, audio: str | torch.FloatTensor, format: str = "WAV") -> io.BytesIO:
+    def convert_audio(
+        self, audio: str | torch.FloatTensor, format: str = "WAV"
+    ) -> io.BytesIO:
         """
         Convert audio to the specified format and return as BytesIO.
         """
@@ -39,11 +41,13 @@ class TextToSpeechServiceBase(AIServiceBase):
             # If audio is a string, assume it's a file path
             audio_np, samplerate = sf.read(audio)
         else:
-            raise ValueError("Unsupported audio format. Provide a valid audio file path or a tensor.")
+            raise ValueError(
+                "Unsupported audio format. Provide a valid audio file path or a tensor."
+            )
 
         # Ensure directory exists
         # os.makedirs("audio", exist_ok=True)
-        
+
         # # Save audio to file with correct format
         # audio_path = os.path.join("audio", "audio_output.wav")
         # sf.write(audio_path, audio_np, samplerate)

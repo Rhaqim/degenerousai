@@ -5,7 +5,7 @@ from typing import Optional
 from openai import OpenAI
 
 from database.vector_store import VectorStore
-from api.model.topic import TopicDraft
+from model.topic import TopicDraft
 
 
 class DocumentProcessor:
