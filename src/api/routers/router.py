@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
-import httpx
 
 from model.chat_completions import ChatCompletionRequest, ChatCompletionResponse
 from model.image import ImageRequest, ImageResponse
@@ -10,7 +9,10 @@ from model.video import VideoRequest, VideoResponse
 
 from api.services.tts import process_request as tts_process_request
 from api.services.ocr import parse_ocr
-from api.services.doc_processing import process_file as call_openai
+from api.services.doc_processing import (
+    process_file as call_openai_file,
+    process_url as call_openai_url,
+)
 
 router = APIRouter()
 
@@ -172,24 +174,24 @@ async def video_generations(request: VideoRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/process-file/")
+@router.post("/document/file")
 async def process_file(
-    file: UploadFile,
-    vector_name: str = Form(...),
-    callback_url: str = Form(...)
+    file: UploadFile, track_id: str = Form(...), callback_url: str = Form(...)
 ):
     # Step 1: Read and process the file
     content = await file.read()
-    
+
     # Step 2: Send to OpenAI (pseudo-code)
-    result = await call_openai(content, file.content_type, vector_name)
+    result = await call_openai_file(track_id, callback_url, content, file.content_type)
 
-    # Step 3: Notify backend via webhook
-    async with httpx.AsyncClient() as client:
-        await client.post(callback_url, json={
-            "vector_name": vector_name,
-            "status": "completed",
-            "result": result
-        })
+    return {"message": "Processing started", "status": result}
 
-    return {"message": "Processing started"}
+
+@router.post("/document/url")
+async def process_url(
+    url: str = Form(...), track_id: str = Form(...), callback_url: str = Form(...)
+):
+    # Step 1: Process the URL
+    result = await call_openai_url(track_id, callback_url, url)
+
+    return {"message": "Processing started", "status": result}

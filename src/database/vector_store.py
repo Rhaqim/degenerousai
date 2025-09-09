@@ -1,5 +1,7 @@
 from typing import Optional
 
+from model.vector import VectorStoreData
+
 from .main import Database
 
 
@@ -16,30 +18,31 @@ class VectorStore:
             """
             CREATE TABLE IF NOT EXISTS vector_store_ids (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                vector_Store_id TEXT NOT NULL UNIQUE,
-                name TEXT NOT NULL UNIQUE
+                vector_store_id TEXT NOT NULL UNIQUE,
+                track_id TEXT NOT NULL UNIQUE,
+                callback_url TEXT
             )
             """
         )
         self.db.commit()
         print("VectorStore database migration completed.")
 
-    def create_vector_store_id(self, vector_store_id: str, name: str):
-        query = "INSERT INTO vector_store_ids (vector_Store_id, name) VALUES (?, ?)"
-        self.db.execute(query, (vector_store_id, name))
+    def create_vector_store_data(self, vector_store_id: str, track_id: str, callback_url: Optional[str] = None):
+        query = "INSERT INTO vector_store_ids (vector_store_id, track_id, callback_url) VALUES (?, ?, ?)"
+        self.db.execute(query, (vector_store_id, track_id, callback_url))
         self.db.commit()
 
-    def read_vector_store_id(self, name: str) -> Optional[str]:
-        query = "SELECT vector_Store_id FROM vector_store_ids WHERE name = ?"
-        result = self.db.fetch_one(query, (name,))
-        return result["vector_Store_id"] if result else None
+    def read_vector_store_data(self, track_id: str) -> Optional[VectorStoreData]:
+        query = "SELECT vector_store_id, track_id, callback_url FROM vector_store_ids WHERE track_id = ?"
+        result = self.db.fetch_one(query, (track_id,))
+        return VectorStoreData(**result) if result else None
 
-    def update_vector_store_id(self, name: str, new_vector_store_id: str):
-        query = "UPDATE vector_store_ids SET vector_Store_id = ? WHERE name = ?"
-        self.db.execute(query, (new_vector_store_id, name))
+    def update_vector_store_data(self, track_id: str, new_vector_store_data: VectorStoreData):
+        query = "UPDATE vector_store_ids SET vector_store_id = ?, callback_url = ? WHERE track_id = ?"
+        self.db.execute(query, (new_vector_store_data.vector_store_id, new_vector_store_data.callback_url, track_id))
         self.db.commit()
 
-    def delete_vector_store_id(self, name: str):
-        query = "DELETE FROM vector_store_ids WHERE name = ?"
-        self.db.execute(query, (name,))
+    def delete_vector_store_data(self, track_id: str):
+        query = "DELETE FROM vector_store_ids WHERE track_id = ?"
+        self.db.execute(query, (track_id,))
         self.db.commit()

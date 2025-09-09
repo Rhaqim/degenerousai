@@ -1,6 +1,6 @@
 from io import BytesIO
 import requests
-from typing import Optional
+from typing import Optional, Union
 
 from openai import OpenAI
 
@@ -37,19 +37,21 @@ class DocumentProcessor:
         self.db._migrate()
         self.topic_db._migrate()
 
-    def get_or_create_vector_store_id(self, name: str) -> str:
+    def get_or_create_vector_store_id(self, name: str, callback_url: str) -> str:
         """
         Retrieve an existing vector store ID by name, or create a new one if it doesn't exist.
         """
-        vec_store_id = self.db.read_vector_store_id(name)
-        if vec_store_id:
-            return vec_store_id
+        vec_store = self.db.read_vector_store_data(name)
+        if vec_store:
+            return vec_store.vector_store_id
 
         vec_store = self.client.vector_stores.create(name=name)
-        self.db.create_vector_store_id(vec_store.id, name)
+        self.db.create_vector_store_data(vec_store.id, name, callback_url)
         return vec_store.id
 
-    def _upload_and_process(self, file_like, vector_store_name: str) -> None:
+    def _upload_and_process(
+        self, file_like, vector_store_name: str, callback_url: str
+    ) -> None:
         """
         Upload a file-like object to OpenAI and associate it with the specified vector store.
         """
@@ -57,21 +59,25 @@ class DocumentProcessor:
         if not hasattr(file_like, "name"):
             file_like.name = "uploaded_file"
         upload_response = self.client.files.create(file=file_like, purpose="assistants")
-        vector_store_id = self.get_or_create_vector_store_id(vector_store_name)
+        vector_store_id = self.get_or_create_vector_store_id(
+            vector_store_name, callback_url
+        )
         self.client.vector_stores.files.create(
             file_id=upload_response.id, vector_store_id=vector_store_id
         )
 
-    def process_file(self, file_path: str, vector_store_name: str) -> None:
+    def process_file(
+        self, file_path: str, vector_store_name: str, callback_url: str
+    ) -> None:
         """
         Process a local file and associate it with a vector store.
         """
         with open(file_path, "rb") as f:
             file_like = BytesIO(f.read())
             file_like.name = file_path  # Ensure file has a name
-            self._upload_and_process(file_like, vector_store_name)
+            self._upload_and_process(file_like, vector_store_name, callback_url)
 
-    def process_url(self, url: str, vector_store_name: str) -> None:
+    def process_url(self, vector_store_name: str, callback_url: str, url: str) -> None:
         """
         Download a file from a URL and associate it with a vector store.
         """
@@ -79,34 +85,41 @@ class DocumentProcessor:
         response.raise_for_status()
         file_like = BytesIO(response.content)
         file_like.name = url.split("/")[-1] or "downloaded_file"
-        self._upload_and_process(file_like, vector_store_name)
+        self._upload_and_process(file_like, vector_store_name, callback_url)
 
-    def process_byte_data(self, byte_data: bytes, vector_store_name: str) -> None:
+    def process_byte_data(
+        self, vector_store_name: str, callback_url: str, byte_data: bytes
+    ) -> None:
         """
         Process raw byte data and associate it with a vector store.
         """
         file_like = BytesIO(byte_data)
         file_like.name = "uploaded_file"
-        self._upload_and_process(file_like, vector_store_name)
+        self._upload_and_process(file_like, vector_store_name, callback_url)
 
-    def check_file_status(self, vector_store_name: str) -> bool:
+    def check_file_status(
+        self, vector_store_name: str
+    ) -> Union[bool, Optional[TopicDraft]]:
         """
         Check the status of an uploaded file by its ID.
         """
-        vector_store_id = self.get_or_create_vector_store_id(vector_store_name)
+        vector_store = self.db.read_vector_store_data(vector_store_name)
 
-        result = self.client.vector_stores.files.list(vector_store_id=vector_store_id)
+        if not vector_store:
+            raise ValueError(f"Vector store with name '{vector_store_name}' not found.")
+
+        result = self.client.vector_stores.files.list(
+            vector_store_id=vector_store.vector_store_id
+        )
         for file in result.data:
             if file.status == "completed":
-                return True
+                self.generate_topic_draft(vector_store.vector_store_id)
         return False
 
-    def generate_topic_draft(self, vector_store_name: str) -> Optional[TopicDraft]:
+    def generate_topic_draft(self, vector_store_id: str) -> Optional[TopicDraft]:
         """
         Generate a draft for a given topic using the associated vector store.
         """
-
-        vector_store_id = self.get_or_create_vector_store_id(vector_store_name)
 
         response = self.client.responses.parse(
             model="gpt-4o",

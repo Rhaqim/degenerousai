@@ -1,4 +1,7 @@
-from typing import Optional
+from typing import Any, Dict, Optional
+
+import httpx
+
 from core.document.openai import DocumentProcessor
 from model.topic import TopicDraft
 
@@ -10,14 +13,17 @@ processor = DocumentProcessor(api_key=api_key)
 #     print(draft)
 
 
-def process_url(url: str, vector_store_name: str):
-    processor.process_url(url, vector_store_name)
+async def process_url(vector_store_name: str, callback_url: str, url: str) -> str:
+    processor.process_url(vector_store_name, callback_url, url)
+
+    return "started"
 
 
 async def process_file(
+    vector_store_name: str,
+    callback_url: str,
     file_bytes: bytes,
     file_type: str | None,
-    vector_store_name: str = "default_vector_store",
 ) -> str:
     # check that the file type is valid
     if file_type not in ["pdf", "txt", "doc", "docx"]:
@@ -25,12 +31,27 @@ async def process_file(
             "Invalid file type. Please upload a PDF, text, or Word document."
         )
 
-    processor.process_byte_data(file_bytes, vector_store_name)
+    processor.process_byte_data(vector_store_name, callback_url, file_bytes)
 
-    return "pending"
+    return "started"
 
 
 def check_file_status(vector_store_name: str) -> Optional[TopicDraft]:
     if processor.check_file_status(vector_store_name):
         return processor.generate_topic_draft(vector_store_name)
     return None
+
+
+async def callback_webhook(
+    url: str, vector_name: str, status: str, result: Optional[TopicDraft] = None
+):
+
+    async with httpx.AsyncClient() as client:
+        payload: Dict[str, Any] = {
+            "track_id": vector_name,
+            "status": status,
+        }
+        if result:
+            payload["result"] = result
+
+        await client.post(url, json=payload)
