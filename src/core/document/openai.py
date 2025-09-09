@@ -1,6 +1,6 @@
 from io import BytesIO
 import requests
-from typing import Optional, Union
+from typing import Any, Dict, Optional
 
 from openai import OpenAI
 
@@ -97,11 +97,10 @@ class DocumentProcessor:
         file_like.name = "uploaded_file"
         self._upload_and_process(file_like, vector_store_name, callback_url)
 
-    def check_file_status(
-        self, vector_store_name: str
-    ) -> Union[bool, Optional[TopicDraft]]:
+    def check_file_status(self, vector_store_name: str) -> Dict[str, Any]:
         """
-        Check the status of an uploaded file by its ID.
+        Check the status of uploaded files by vector store name.
+        Returns a dict with 'status' and 'result' keys.
         """
         vector_store = self.db.read_vector_store_data(vector_store_name)
 
@@ -111,10 +110,18 @@ class DocumentProcessor:
         result = self.client.vector_stores.files.list(
             vector_store_id=vector_store.vector_store_id
         )
+
         for file in result.data:
             if file.status == "completed":
-                self.generate_topic_draft(vector_store.vector_store_id)
-        return False
+                draft = self.generate_topic_draft(vector_store.vector_store_id)
+                return {
+                    "status": "completed",
+                    "result": draft,
+                    "callback_url": vector_store.callback_url,
+                }
+        # If no file is completed, return the status of the last file (or None)
+        last_status = result.data[-1].status if result.data else None
+        return {"status": last_status, "result": None}
 
     def generate_topic_draft(self, vector_store_id: str) -> Optional[TopicDraft]:
         """
