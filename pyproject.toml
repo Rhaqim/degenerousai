@@ -19,6 +19,7 @@ dependencies = [
     "pymupdf (>=1.26.4,<2.0.0)",
     "python-multipart (>=0.0.20,<0.0.21)",
     "openai (>=1.106.1,<2.0.0)",
+    "dotenv (>=0.9.9,<0.10.0)",
 ]
 
 [tool.poetry]

@@ -3,11 +3,12 @@ from typing import Any, Dict, Optional
 
 import httpx
 
+from config.keys import OPENAI_API_KEY
 from core.document.openai import DocumentProcessor
 from model.topic import TopicDraft
 
-api_key = "your_openai_api_key"
-processor = DocumentProcessor(api_key=api_key)
+
+processor = DocumentProcessor(api_key=OPENAI_API_KEY)
 
 POLL_INTERVAL = 5  # seconds
 
