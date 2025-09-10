@@ -4,42 +4,6 @@ from model.vector import VectorStoreData, ProcessorStatus
 
 from .main import Database
 
-MIGRATION_DICT = {
-    "old": """
-        CREATE TABLE IF NOT EXISTS vector_store_ids (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            vector_store_id TEXT NOT NULL UNIQUE,
-            track_id TEXT NOT NULL UNIQUE,
-            callback_url TEXT
-        )
-        """,
-    "secondary": """
-        ALTER TABLE vector_store_ids
-        ADD COLUMN vector_file_id TEXT;
-
-        ALTER TABLE vector_store_ids
-        ADD COLUMN file_name TEXT;
-
-        ALTER TABLE vector_store_ids
-        ADD COLUMN status TEXT DEFAULT 'pending';
-
-        ALTER TABLE vector_store_ids
-        ADD COLUMN error_message TEXT;
-        """,
-    "new": """
-        CREATE TABLE IF NOT EXISTS vector_store_ids (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                vector_store_id TEXT NOT NULL UNIQUE,
-                vector_file_id TEXT,
-                file_name TEXT,
-                track_id TEXT NOT NULL UNIQUE,
-                callback_url TEXT,
-                status TEXT DEFAULT 'pending',
-                error_message TEXT
-            )
-        """,
-}
-
 
 class VectorStore:
     def __init__(self):
@@ -64,6 +28,7 @@ class VectorStore:
             )
             """
         )
+
         self.db.commit()
         print("VectorStore database migration completed.")
 

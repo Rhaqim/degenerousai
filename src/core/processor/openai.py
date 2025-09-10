@@ -30,7 +30,6 @@ class Processor:
         self.db = vector_db or VectorStore()
         self.topic_db = topic_db or TopicDraftDB()
         # Optionally call self._migrate() here if needed
-        self._migrate()
 
     def _migrate(self):
         """
