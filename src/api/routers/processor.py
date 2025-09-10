@@ -11,16 +11,16 @@ router = APIRouter(prefix="/process", tags=["Document Processing"])
 
 @router.post("/document/file")
 async def document_file(
-    file: UploadFile, task_id: str = Form(...), callback_url: str = Form(...)
+    file: UploadFile, track_id: str = Form(...), callback_url: str = Form(...)
 ):
     # Step 1: Read and process the file
     content = await file.read()
 
     print(f"Received file: {file.filename}, type: {file.content_type} with size {len(content)} bytes")
-    print(f"Task ID: {task_id}, Callback URL: {callback_url}")
+    print(f"Task ID: {track_id}, Callback URL: {callback_url}")
 
     # Step 2: Send to OpenAI (pseudo-code)
-    result = await call_openai_file(task_id, callback_url, content, file.content_type)
+    result = await call_openai_file(track_id, callback_url, content, file.content_type)
 
     return {"message": "Processing started", "status": result}
 

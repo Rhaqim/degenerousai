@@ -29,6 +29,7 @@ class Processor:
         self.db = vector_db or VectorStore()
         self.topic_db = topic_db or TopicDraftDB()
         # Optionally call self._migrate() here if needed
+        self._migrate()
 
     def _migrate(self):
         """
@@ -59,15 +60,17 @@ class Processor:
         """
 
         print(f"Uploading and processing file for vector store: {vector_store_name}")
-        
-        upload_response = self.client.files.create(file=file_like, purpose="assistants")
 
-        print(f"Uploaded file with ID: {upload_response.id}")
         vector_store_id = self.get_or_create_vector_store_id(
             vector_store_name, callback_url
         )
 
-        print(f"Using vector store ID: {vector_store_id}")
+        upload_response = self.client.files.create(file=file_like, purpose="assistants")
+
+        print(
+            f"Uploaded file with ID: {upload_response.id} Using vector store ID: {vector_store_id}"
+        )
+
         self.client.vector_stores.files.create(
             file_id=upload_response.id, vector_store_id=vector_store_id
         )

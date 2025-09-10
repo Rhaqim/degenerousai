@@ -15,6 +15,8 @@ class TopicDraftDB:
         """
         Creates the necessary tables in the database if they do not exist.
         """
+
+        print("Migrating TopicDraft database...")
         self.db.execute(
             """
             CREATE TABLE IF NOT EXISTS topic_drafts (
