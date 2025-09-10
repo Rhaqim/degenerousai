@@ -1,10 +1,16 @@
 from enum import Enum
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional
+
 
 from pydantic import BaseModel, Field
 
 
-class StoryData(BaseModel):
+class SerializableModel(BaseModel):
+    def to_json(self, **kwargs):
+        return self.model_dump_json(**kwargs)
+
+
+class StoryData(SerializableModel):
     name: str = Field(..., description="The name of the story")
     description: str = Field(..., description="The description of the story")
     image_prompt: str = Field(
@@ -12,7 +18,7 @@ class StoryData(BaseModel):
     )
 
 
-class Character(BaseModel):
+class Character(SerializableModel):
     name: str = Field(..., description="The name of the character")
     description: str = Field(..., description="The description of the character")
     physicality: str = Field(
@@ -23,7 +29,7 @@ class Character(BaseModel):
     )
 
 
-class Relationship(BaseModel):
+class Relationship(SerializableModel):
     type: str = Field(..., description="The type of relationship")
     details: str = Field(..., description="Details about the relationship")
     connection: List[str] = Field(
@@ -37,13 +43,13 @@ class MinMax(str, Enum):
     MAX = "max"
 
 
-class Tone(BaseModel):
+class Tone(SerializableModel):
     name: str = Field(..., description="The name of the tone")
     value: MinMax = Field(..., description="The value of the tone")
     hints: Optional[List[str]] = Field(None, description="Optional hints for the tone")
 
 
-class TablePrompt(BaseModel):
+class TablePrompt(SerializableModel):
     premise: str = Field(..., description="The premise of the story")
     environment: str = Field(
         ..., description="The environment the story takes place in"
@@ -86,7 +92,7 @@ class TablePrompt(BaseModel):
     )
 
 
-class TopicDraft(BaseModel):
+class TopicDraft(SerializableModel):
     title: str = Field(..., description="The title of the topic")
     story_data: Optional[StoryData] = Field(
         None, description="Optional story data associated with the topic"

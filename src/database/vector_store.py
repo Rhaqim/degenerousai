@@ -1,8 +1,44 @@
 from typing import Optional
 
-from model.vector import VectorStoreData
+from model.vector import VectorStoreData, ProcessorStatus
 
 from .main import Database
+
+MIGRATION_DICT = {
+    "old": """
+        CREATE TABLE IF NOT EXISTS vector_store_ids (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            vector_store_id TEXT NOT NULL UNIQUE,
+            track_id TEXT NOT NULL UNIQUE,
+            callback_url TEXT
+        )
+        """,
+    "secondary": """
+        ALTER TABLE vector_store_ids
+        ADD COLUMN vector_file_id TEXT;
+
+        ALTER TABLE vector_store_ids
+        ADD COLUMN file_name TEXT;
+
+        ALTER TABLE vector_store_ids
+        ADD COLUMN status TEXT DEFAULT 'pending';
+
+        ALTER TABLE vector_store_ids
+        ADD COLUMN error_message TEXT;
+        """,
+    "new": """
+        CREATE TABLE IF NOT EXISTS vector_store_ids (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                vector_store_id TEXT NOT NULL UNIQUE,
+                vector_file_id TEXT,
+                file_name TEXT,
+                track_id TEXT NOT NULL UNIQUE,
+                callback_url TEXT,
+                status TEXT DEFAULT 'pending',
+                error_message TEXT
+            )
+        """,
+}
 
 
 class VectorStore:
@@ -19,15 +55,21 @@ class VectorStore:
             CREATE TABLE IF NOT EXISTS vector_store_ids (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 vector_store_id TEXT NOT NULL UNIQUE,
+                vector_file_id TEXT,
+                file_name TEXT,
                 track_id TEXT NOT NULL UNIQUE,
-                callback_url TEXT
+                callback_url TEXT,
+                status TEXT DEFAULT 'pending',
+                error_message TEXT
             )
             """
         )
         self.db.commit()
         print("VectorStore database migration completed.")
 
-    def create_vector_store_data(self, vector_store_id: str, track_id: str, callback_url: Optional[str] = None):
+    def create_vector_store_data(
+        self, vector_store_id: str, track_id: str, callback_url: Optional[str] = None
+    ):
         query = "INSERT INTO vector_store_ids (vector_store_id, track_id, callback_url) VALUES (?, ?, ?)"
         self.db.execute(query, (vector_store_id, track_id, callback_url))
         self.db.commit()
@@ -37,9 +79,39 @@ class VectorStore:
         result = self.db.fetch_one(query, (track_id,))
         return VectorStoreData(**result) if result else None
 
-    def update_vector_store_data(self, track_id: str, new_vector_store_data: VectorStoreData):
+    def update_vector_file_data(
+        self,
+        track_id: str,
+        vector_file_id: str,
+        file_name: str,
+        status: ProcessorStatus,
+        error_message: Optional[str] = None,
+    ):
+        query = "UPDATE vector_store_ids SET vector_file_id = ?, file_name = ?, status = ?, error_message = ? WHERE track_id = ?"
+        self.db.execute(
+            query,
+            (
+                vector_file_id,
+                file_name,
+                status,
+                error_message,
+                track_id,
+            ),
+        )
+        self.db.commit()
+
+    def update_vector_store_data(
+        self, track_id: str, new_vector_store_data: VectorStoreData
+    ):
         query = "UPDATE vector_store_ids SET vector_store_id = ?, callback_url = ? WHERE track_id = ?"
-        self.db.execute(query, (new_vector_store_data.vector_store_id, new_vector_store_data.callback_url, track_id))
+        self.db.execute(
+            query,
+            (
+                new_vector_store_data.vector_store_id,
+                new_vector_store_data.callback_url,
+                track_id,
+            ),
+        )
         self.db.commit()
 
     def delete_vector_store_data(self, track_id: str):

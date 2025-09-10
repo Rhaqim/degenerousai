@@ -7,6 +7,7 @@ from openai import OpenAI
 from database.vector_store import VectorStore
 from database.topic_draft import TopicDraftDB
 from model.topic import TopicDraft
+from model.vector import ProcessorStatus
 
 
 class Processor:
@@ -38,7 +39,9 @@ class Processor:
         self.db._migrate()
         self.topic_db._migrate()
 
-    def get_or_create_vector_store_id(self, name: str, callback_url: str) -> str:
+    def get_or_create_vector_store_id(
+        self, name: str, callback_url: str
+    ) -> Tuple[str, Optional[str]]:
         """
         Retrieve an existing vector store ID by name, or create a new one if it doesn't exist.
         """
@@ -46,11 +49,11 @@ class Processor:
         print(f"Retrieving or creating vector store with name: {name}")
         vec_store = self.db.read_vector_store_data(name)
         if vec_store:
-            return vec_store.vector_store_id
+            return (vec_store.vector_store_id, vec_store.vector_file_id)
 
         vec_store = self.client.vector_stores.create(name=name)
         self.db.create_vector_store_data(vec_store.id, name, callback_url)
-        return vec_store.id
+        return (vec_store.id, None)
 
     def _upload_and_process(
         self, file_like: Tuple[str, bytes], vector_store_name: str, callback_url: str
@@ -61,9 +64,15 @@ class Processor:
 
         print(f"Uploading and processing file for vector store: {vector_store_name}")
 
-        vector_store_id = self.get_or_create_vector_store_id(
+        vector_store_id, vector_file_id = self.get_or_create_vector_store_id(
             vector_store_name, callback_url
         )
+
+        if vector_file_id:
+            print(
+                f"File already associated with vector store '{vector_store_name}'. Skipping upload."
+            )
+            return
 
         upload_response = self.client.files.create(file=file_like, purpose="assistants")
 
@@ -74,7 +83,15 @@ class Processor:
         self.client.vector_stores.files.create(
             file_id=upload_response.id, vector_store_id=vector_store_id
         )
+
         print(f"File associated with vector store: {vector_store_name}")
+
+        self.db.update_vector_file_data(
+            vector_store_name,
+            upload_response.id,
+            file_like[0],
+            ProcessorStatus.PROCESSING,
+        )
 
     def process_file(
         self, file_path: str, vector_store_name: str, callback_url: str
