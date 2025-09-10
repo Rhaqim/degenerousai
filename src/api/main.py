@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import openai, process
+from api.routers import openai, processor, test
 
 app = FastAPI()
 
 app.include_router(openai.router, prefix="/api/v1", tags=["v1"])
-app.include_router(process.router, prefix="/api/v1", tags=["v1"])
+app.include_router(processor.router, prefix="/api/v1", tags=["v1"])
+app.include_router(test.router)
 
 app.add_middleware(
     CORSMiddleware,

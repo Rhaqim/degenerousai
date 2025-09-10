@@ -4,11 +4,11 @@ from typing import Any, Dict, Optional
 import httpx
 
 from config.keys import OPENAI_API_KEY
-from core.document.openai import DocumentProcessor
+from core.processor.openai import Processor
 from model.topic import TopicDraft
 
 
-processor = DocumentProcessor(api_key=OPENAI_API_KEY)
+processor = Processor(api_key=OPENAI_API_KEY)
 
 POLL_INTERVAL = 5  # seconds
 
@@ -43,11 +43,15 @@ async def process_file(
     file_bytes: bytes,
     file_type: str | None,
 ) -> str:
-    if file_type not in ["pdf", "txt", "doc", "docx"]:
+    print(f"Processing file of type: {file_type}")
+    if file_type not in ["application/pdf", "application/txt", "application/doc", "application/docx"]:
         raise ValueError(
-            "Invalid file type. Please upload a PDF, text, or Word document."
+            f"Invalid file type. Please upload a PDF, text, or Word document. Given: {file_type}"
         )
+    
     processor.process_byte_data(vector_store_name, callback_url, file_bytes)
+
+    print(f"Started processing for vector store: {vector_store_name}")
     asyncio.create_task(poll_status_and_callback(vector_store_name))
     return "started"
 

@@ -9,10 +9,10 @@ from database.topic_draft import TopicDraftDB
 from model.topic import TopicDraft
 
 
-class DocumentProcessor:
+class Processor:
     """
     Handles uploading documents to OpenAI and associating them with a vector store.
-    Supports processing from file paths, URLs, or raw byte data.
+    Supports processing from file paths, URLs, or raw byte data. ALso handles processing web links.
     """
 
     def __init__(
@@ -41,6 +41,8 @@ class DocumentProcessor:
         """
         Retrieve an existing vector store ID by name, or create a new one if it doesn't exist.
         """
+
+        print(f"Retrieving or creating vector store with name: {name}")
         vec_store = self.db.read_vector_store_data(name)
         if vec_store:
             return vec_store.vector_store_id
@@ -55,16 +57,21 @@ class DocumentProcessor:
         """
         Upload a file-like object to OpenAI and associate it with the specified vector store.
         """
-        # Ensure file_like has a name attribute
-        if not hasattr(file_like, "name"):
-            file_like.name = "uploaded_file"
+
+        print(f"Uploading and processing file for vector store: {vector_store_name}")
+        
         upload_response = self.client.files.create(file=file_like, purpose="assistants")
+
+        print(f"Uploaded file with ID: {upload_response.id}")
         vector_store_id = self.get_or_create_vector_store_id(
             vector_store_name, callback_url
         )
+
+        print(f"Using vector store ID: {vector_store_id}")
         self.client.vector_stores.files.create(
             file_id=upload_response.id, vector_store_id=vector_store_id
         )
+        print(f"File associated with vector store: {vector_store_name}")
 
     def process_file(
         self, file_path: str, vector_store_name: str, callback_url: str
@@ -93,8 +100,10 @@ class DocumentProcessor:
         """
         Process raw byte data and associate it with a vector store.
         """
+
+        print(f"Processing byte data of size: {len(byte_data)} bytes")
         file_like = BytesIO(byte_data)
-        file_like.name = "uploaded_file"
+        # file_like.name = "uploaded_file"
         self._upload_and_process(file_like, vector_store_name, callback_url)
 
     def check_file_status(self, vector_store_name: str) -> Dict[str, Any]:
@@ -130,7 +139,16 @@ class DocumentProcessor:
 
         response = self.client.responses.parse(
             model="gpt-4o",
-            input="Generate a topic draft based on the uploaded documents.",
+            input=[
+                {
+                    "role": "system",
+                    "content": "Generate a topic draft based on the uploaded documents.",
+                },
+                {
+                    "role": "user",
+                    "content": "Please create a comprehensive topic draft using the information from the documents.",
+                },
+            ],
             tools=[
                 {
                     "type": "file_search",
