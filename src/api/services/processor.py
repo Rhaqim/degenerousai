@@ -42,6 +42,7 @@ async def process_file(
     callback_url: str,
     file_bytes: bytes,
     file_type: str | None,
+    file_name: str | None = "uploaded_file",
 ) -> str:
     print(f"Processing file of type: {file_type}")
     if file_type not in ["application/pdf", "application/txt", "application/doc", "application/docx"]:
@@ -49,7 +50,10 @@ async def process_file(
             f"Invalid file type. Please upload a PDF, text, or Word document. Given: {file_type}"
         )
     
-    processor.process_byte_data(vector_store_name, callback_url, file_bytes)
+    if not file_name:
+        file_name = "uploaded_file"
+    
+    processor.process_byte_data(vector_store_name, callback_url, file_bytes, file_name)
 
     print(f"Started processing for vector store: {vector_store_name}")
     asyncio.create_task(poll_status_and_callback(vector_store_name))

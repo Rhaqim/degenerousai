@@ -1,6 +1,6 @@
 from io import BytesIO
 import requests
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from openai import OpenAI
 
@@ -53,7 +53,7 @@ class Processor:
         return vec_store.id
 
     def _upload_and_process(
-        self, file_like, vector_store_name: str, callback_url: str
+        self, file_like: Tuple[str, bytes], vector_store_name: str, callback_url: str
     ) -> None:
         """
         Upload a file-like object to OpenAI and associate it with the specified vector store.
@@ -84,8 +84,9 @@ class Processor:
         """
         with open(file_path, "rb") as f:
             file_like = BytesIO(f.read())
-            file_like.name = file_path  # Ensure file has a name
-            self._upload_and_process(file_like, vector_store_name, callback_url)
+            file_name = file_path.split("/")[-1]
+            file_tuple = (file_name, file_like.getvalue())
+            self._upload_and_process(file_tuple, vector_store_name, callback_url)
 
     def process_url(self, vector_store_name: str, callback_url: str, url: str) -> None:
         """
@@ -94,20 +95,26 @@ class Processor:
         response = requests.get(url)
         response.raise_for_status()
         file_like = BytesIO(response.content)
-        file_like.name = url.split("/")[-1] or "downloaded_file"
-        self._upload_and_process(file_like, vector_store_name, callback_url)
+        file_name = url.split("/")[-1] or "downloaded_file"
+        file_tuple = (file_name, file_like.getvalue())
+        self._upload_and_process(file_tuple, vector_store_name, callback_url)
 
     def process_byte_data(
-        self, vector_store_name: str, callback_url: str, byte_data: bytes
+        self,
+        vector_store_name: str,
+        callback_url: str,
+        byte_data: bytes,
+        file_name: str = "uploaded_file",
     ) -> None:
         """
         Process raw byte data and associate it with a vector store.
         """
 
-        print(f"Processing byte data of size: {len(byte_data)} bytes")
-        file_like = BytesIO(byte_data)
+        # print(f"Processing byte data of size: {len(byte_data)} bytes")
+        # file_like = BytesIO(byte_data)
         # file_like.name = "uploaded_file"
-        self._upload_and_process(file_like, vector_store_name, callback_url)
+        file_tuple = (file_name, byte_data)
+        self._upload_and_process(file_tuple, vector_store_name, callback_url)
 
     def check_file_status(self, vector_store_name: str) -> Dict[str, Any]:
         """
