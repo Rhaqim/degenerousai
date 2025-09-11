@@ -69,5 +69,5 @@ async def callback_webhook(
             "status": status,
         }
         if result:
-            payload["result"] = result
+            payload["result"] = result.model_dump_json()
         await client.post(url, json=payload)

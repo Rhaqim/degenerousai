@@ -40,7 +40,7 @@ class VectorStore:
         self.db.commit()
 
     def read_vector_store_data(self, track_id: str) -> Optional[VectorStoreData]:
-        query = "SELECT vector_store_id, track_id, callback_url FROM vector_store_ids WHERE track_id = ?"
+        query = "SELECT vector_store_id, vector_file_id, file_name, track_id, callback_url, status, error_message FROM vector_store_ids WHERE track_id = ?"
         result = self.db.fetch_one(query, (track_id,))
         return VectorStoreData(**result) if result else None
 
