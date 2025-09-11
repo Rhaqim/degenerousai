@@ -17,6 +17,7 @@ class TopicDraftDB:
         """
 
         print("Migrating TopicDraft database...")
+        # TODO: Make vector_store_id unique if one-to-one relationship is desired
         self.db.execute(
             """
             CREATE TABLE IF NOT EXISTS topic_drafts (
