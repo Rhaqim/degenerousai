@@ -7,6 +7,6 @@ load_dotenv()
 
 # Example: Load API keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ANOTHER_API_KEY = os.getenv("ANOTHER_API_KEY")
+DEGEN_API_KEY = os.getenv("DEGEN_API_KEY")
 
 # Add more keys as needed

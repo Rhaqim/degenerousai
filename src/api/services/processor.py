@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from config.keys import OPENAI_API_KEY
+from config.keys import OPENAI_API_KEY, DEGEN_API_KEY
 from core.processor.openai import Processor
 from model.topic import TopicDraft
 
@@ -45,14 +45,19 @@ async def process_file(
     file_name: str | None = "uploaded_file",
 ) -> str:
     print(f"Processing file of type: {file_type}")
-    if file_type not in ["application/pdf", "application/txt", "application/doc", "application/docx"]:
+    if file_type not in [
+        "application/pdf",
+        "application/txt",
+        "application/doc",
+        "application/docx",
+    ]:
         raise ValueError(
             f"Invalid file type. Please upload a PDF, text, or Word document. Given: {file_type}"
         )
-    
+
     if not file_name:
         file_name = "uploaded_file"
-    
+
     processor.process_byte_data(vector_store_name, callback_url, file_bytes, file_name)
 
     print(f"Started processing for vector store: {vector_store_name}")
@@ -64,6 +69,8 @@ async def callback_webhook(
     url: str, vector_name: str, status: str, result: Optional[TopicDraft] = None
 ):
     async with httpx.AsyncClient() as client:
+        client.headers["Authorization"] = f"Mutual {DEGEN_API_KEY}"
+
         payload: Dict[str, Any] = {
             "track_id": vector_name,
             "status": status,
