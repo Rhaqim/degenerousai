@@ -148,6 +148,7 @@ class Processor:
 
         for file in result.data:
             if file.status == "completed":
+
                 draft = self.generate_topic_draft(vector_store.vector_store_id)
                 return {
                     "status": "completed",
@@ -162,6 +163,11 @@ class Processor:
         """
         Generate a draft for a given topic using the associated vector store.
         """
+
+        # try and get the topic draft from the database first
+        existing_draft = self.topic_db.read_topic_draft(vector_store_id)
+        if existing_draft:
+            return existing_draft[0]  # return the first draft if multiple exist
 
         response = self.client.responses.parse(
             model="gpt-4o",
