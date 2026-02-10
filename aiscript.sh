@@ -12,15 +12,15 @@ export PATH="/root/.local/bin:$PATH"
 apt-get update
 apt-get install -y supervisor
 
-# Create fastapi.conf in /etc/supervisor/conf.d/
-cat <<EOL > /etc/supervisor/conf.d/fastapi.conf
-[program:fastapi]
+# Create degenerousai.conf in /etc/supervisor/conf.d/
+cat <<EOL > /etc/supervisor/conf.d/degenerousai.conf
+[program:degenerousai]
 command=/root/.local/bin/poetry run python src/degenerousai/main.py
 directory=/workspace/degenerousai
 autostart=true
 autorestart=true
-stderr_logfile=/var/log/fastapi.err.log
-stdout_logfile=/var/log/fastapi.out.log
+stderr_logfile=/var/log/degenerousai.err.log
+stdout_logfile=/var/log/degenerousai.out.log
 environment=PATH="/root/.local/bin:%(ENV_PATH)s"
 EOL
 
@@ -32,16 +32,16 @@ supervisord
 supervisorctl reread
 supervisorctl update
 
-# Start the fastapi program
-supervisorctl start fastapi
+# Start the degenerousai program
+supervisorctl start degenerousai
 
-# Wait for the fastapi program to start
+# Wait for the degenerousai program to start
 sleep 5
 
-# Check if the fastapi program is running
-if supervisorctl status fastapi | grep -q "RUNNING"; then
-    echo "FastAPI program is running"
+# Check if the degenerousai program is running
+if supervisorctl status degenerousai | grep -q "RUNNING"; then
+    echo "Degenerousai program is running"
 else
-    echo "FastAPI program is not running"
+    echo "Degenerousai program is not running"
     exit 1
 fi
